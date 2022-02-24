@@ -16,8 +16,12 @@ pycom.heartbeat(False)
 
 print("Trying to connected to WiFi...\n")
 
+# WLAN parameters (mandatory to set)
+ssid = ""
+wlan_password = ""
+
 wlan = WLAN(mode=WLAN.STA)
-wlan.connect("", auth=(WLAN.WPA2, ""), timeout=10000)
+wlan.connect(ssid, auth=(WLAN.WPA2, wlan_password), timeout=10000)
 
 while not wlan.isconnected():
     machine.idle()
@@ -28,7 +32,7 @@ print("Connected to WiFi\n")
 def sub_cb(topic, msg):
    print(msg)
 
-# MQTT parameters
+# MQTT parameters (mandatory to set)
 mqtt_host = "mqtt3.thingspeak.com"
 mqtt_client_ID = ""
 mqtt_username = ""
@@ -61,7 +65,10 @@ while True:
       gas = decoded[3]
       print('Decoded data: {} C, {} rH, {} hPa, {} kohms'.format(temp, hum, press, gas))
       payload = "field1={}&field2={}&field3={}&field4={}&status=MQTTPUBLISH".format(temp, hum, press, gas)
-      client.publish(topic=topic, msg=payload)
+      try:
+          client.publish(topic=topic, msg=payload)
+      except Exception:
+          continue
       pycom.rgbled(off)
 
     except socket.timeout:
