@@ -55,21 +55,29 @@ print("Waiting for data over LoRa...\n")
 
 while True:
     try:
-      data = s.recv(30)
-      decoded = struct.unpack('ffff', data)
-      pycom.rgbled(green)
-      print('Recieved over LoRa: {}'.format(data))
-      temp = decoded[0]
-      hum = decoded[1]
-      press = decoded[2]
-      gas = decoded[3]
-      print('Decoded data: {} C, {} rH, {} hPa, {} kohms'.format(temp, hum, press, gas))
-      payload = "field1={}&field2={}&field3={}&field4={}&status=MQTTPUBLISH".format(temp, hum, press, gas)
+      data = s.recv(20)
       try:
-          client.publish(topic=topic, msg=payload)
-      except Exception:
-          continue
-      pycom.rgbled(off)
+          decoded = struct.unpack('ffff', data)
+          pycom.rgbled(green)
+          print('Recieved over LoRa: {}'.format(data))
+          temp = decoded[0]
+          hum = decoded[1]
+          press = decoded[2]
+          gas = decoded[3]
+          print('Decoded data: {} C, {} rH, {} hPa, {} kohms'.format(temp, hum, press, gas))
+          payload = "field1={}&field2={}&field3={}&field4={}&status=MQTTPUBLISH".format(temp, hum, press, gas)
+          try:
+              # This condition is to avoid error data
+              if press > 100:
+                  client.publish(topic=topic, msg=payload)
+          except Exception as ex:
+              print("Error publishing mqtt message. Exception:\n")
+              print(ex)
+              continue
+          pycom.rgbled(off)
+      except Exception as ex:
+          print("Not values from STM32: Exception:\n")
+          print(ex)
 
     except socket.timeout:
       print('No LoRa packet received')
